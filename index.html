@@ -2,112 +2,162 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>WIND | Ultimate OS</title>
+    <title>WIND | Power & Stability</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono&family=Plus+Jakarta+Sans:wght@300;800&display=swap" rel="stylesheet">
-
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    
     <style>
-        :root { --accent: #8b5cf6; --bg: #030303; }
-        body { background: var(--bg); color: white; font-family: 'Plus Jakarta Sans', sans-serif; overflow: hidden; }
-        .glass { background: rgba(10, 10, 10, 0.4); backdrop-filter: blur(40px); border: 1px solid rgba(255, 255, 255, 0.05); }
-        .btn-zen { background: var(--accent); transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1); cursor: pointer; }
-        .btn-zen:hover { transform: scale(1.02); box-shadow: 0 0 30px var(--accent); }
-        input { background: rgba(255,255,255,0.02) !important; border: 1px solid rgba(255,255,255,0.1) !important; color: white !important; outline: none; transition: 0.3s; }
-        input:focus { border-color: var(--accent) !important; background: rgba(255,255,255,0.05) !important; }
+        :root { --accent: #22c55e; --bg: #0a0a0a; } /* Мятный цвет как на фото */
+        body { background: var(--bg); color: white; font-family: 'Inter', sans-serif; overflow-x: hidden; }
         
+        /* Сетка на фоне как на скриншоте */
+        .bg-grid {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-image: radial-gradient(circle at 2px 2px, rgba(255,255,255,0.05) 1px, transparent 0);
+            background-size: 40px 40px; z-index: -1;
+        }
+
+        .glass { background: rgba(255, 255, 255, 0.02); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.05); }
+        .btn-mint { background: var(--accent); color: #000; font-weight: 800; transition: 0.3s; }
+        .btn-mint:hover { box-shadow: 0 0 25px var(--accent); transform: translateY(-2px); }
+        
+        /* Плавность вкладок */
+        .page { animation: fadeIn 0.5s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
         /* Дождь */
-        .drop { position: absolute; background: white; width: 1px; height: 50px; opacity: 0.2; pointer-events: none; animation: fall linear infinite; }
+        .rain { position: fixed; width: 1px; height: 100px; background: white; opacity: 0.1; pointer-events: none; animation: fall linear infinite; }
         @keyframes fall { to { transform: translateY(110vh); } }
 
-        .hidden { display: none !important; }
-        .mono { font-family: 'JetBrains Mono', monospace; }
+        .nav-link { cursor: pointer; opacity: 0.6; transition: 0.3s; font-size: 13px; }
+        .nav-link:hover, .nav-link.active { opacity: 1; color: var(--accent); }
     </style>
 </head>
-<body class="p-6">
+<body>
 
-    <div id="rain-box"></div>
+    <div class="bg-grid"></div>
+    <div id="rain-layer"></div>
 
-    <div id="notif" class="fixed top-10 left-1/2 -translate-x-1/2 glass px-8 py-3 rounded-2xl z-[1000] transition-all duration-500 opacity-0 translate-y-[-50px]"></div>
+    <header class="fixed top-0 w-full p-6 flex justify-between items-center z-[100] glass border-b border-white/5">
+        <div class="flex items-center gap-2">
+            <div class="w-8 h-8 bg-emerald-500 rounded-lg flex items-center justify-center font-bold text-black">W</div>
+            <span class="font-black italic text-lg uppercase tracking-tighter">WindClient</span>
+        </div>
+        <nav class="hidden md:flex gap-8">
+            <span onclick="showPage('home')" class="nav-link active" id="n-home">Home</span>
+            <span onclick="showPage('products')" class="nav-link" id="n-products">Products</span>
+            <span onclick="showPage('desc')" class="nav-link" id="n-desc">Description</span>
+            <span onclick="showPage('video')" class="nav-link" id="n-video">Showcase</span>
+            <span onclick="showPage('settings')" class="nav-link" id="n-settings">Settings</span>
+        </nav>
+        <div id="auth-buttons" class="flex gap-4">
+            <button onclick="showAuth()" class="px-5 py-2 glass rounded-xl text-xs font-bold">Sign In</button>
+            <button onclick="showAuth()" class="btn-mint px-5 py-2 rounded-xl text-xs">Sign Up</button>
+        </div>
+        <div id="user-info" class="hidden font-bold text-xs text-emerald-400"></div>
+    </header>
 
-    <nav class="flex justify-between items-center mb-10 relative z-50">
-        <h1 class="text-4xl font-black italic tracking-tighter" style="color: var(--accent)">WIND</h1>
-        <div id="user-tag" class="text-[10px] font-bold opacity-50 uppercase tracking-widest">Guest Mode</div>
-    </nav>
+    <main class="pt-32 pb-20 px-6 max-w-7xl mx-auto">
 
-    <div id="screen-auth" class="flex flex-col items-center justify-center min-h-[70vh]">
-        <div class="glass p-10 rounded-[3rem] w-full max-w-sm relative overflow-hidden">
-            <div class="flex justify-around mb-10 text-[10px] font-black uppercase">
-                <button onclick="setTab('login')" id="tab-l" class="text-purple-400 border-b border-purple-400">Вход</button>
-                <button onclick="setTab('reg')" id="tab-r" class="text-gray-600">Регистрация</button>
+        <section id="p-home" class="page flex flex-col items-center text-center">
+            <div class="bg-emerald-500/10 text-emerald-400 px-4 py-1 rounded-full text-[10px] font-bold border border-emerald-500/20 mb-6 uppercase tracking-widest">
+                🏆 Your Best Choice!
             </div>
+            <h1 class="text-6xl md:text-8xl font-extrabold mb-8 leading-tight">The best solution among all <br> <span class="text-emerald-500">power, stability</span></h1>
+            <p class="max-w-2xl text-gray-500 text-lg mb-12">Мы предоставляем захватывающий мир с изысканной эстетикой, интеллектуальными обходами и продвинутыми модулями.</p>
+            
+            <div class="w-full max-w-4xl grid grid-cols-1 md:grid-cols-3 gap-8 mt-10">
+                <div class="glass p-8 rounded-[2rem] md:col-span-2 text-left h-[400px] flex flex-col">
+                    <h3 class="text-xs font-black uppercase text-gray-500 mb-4">Community Chat</h3>
+                    <div id="chat-box" class="flex-1 overflow-y-auto space-y-4 pr-2 text-sm"></div>
+                    <div class="mt-4 flex gap-2">
+                        <input type="text" id="chat-in" placeholder="Написать в чат..." class="flex-1 bg-white/5 border border-white/10 p-3 rounded-xl outline-none text-xs">
+                        <button onclick="sendMsg()" class="btn-mint px-6 rounded-xl">></button>
+                    </div>
+                </div>
+                
+                <div class="glass p-8 rounded-[2rem] flex flex-col">
+                    <h3 class="text-xs font-black uppercase text-gray-500 mb-4">WIND Radio</h3>
+                    <div id="player-status" class="flex-1 flex flex-col items-center justify-center text-center">
+                        <div class="w-20 h-20 bg-emerald-500/20 rounded-full flex items-center justify-center mb-4 animate-pulse">
+                            <i class="bi bi-music-note-beamed text-2xl text-emerald-500"></i>
+                        </div>
+                        <p id="track-name" class="font-bold text-sm">No Track Loaded</p>
+                        <p class="text-[10px] text-gray-600 uppercase mt-2">Ambient Lofi</p>
+                    </div>
+                    <input type="text" id="m-url" placeholder="YouTube URL" class="w-full bg-white/5 p-2 rounded-lg text-[10px] mb-2">
+                    <button onclick="loadMusic()" class="w-full py-2 glass rounded-lg text-[10px] font-bold">PLAY</button>
+                </div>
+            </div>
+        </section>
+
+        <section id="p-products" class="page hidden space-y-10">
+            <h2 class="text-4xl font-black">Our <span class="text-emerald-500">Products</span></h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div class="glass p-10 rounded-[3rem] border-t-4 border-emerald-500">
+                    <h3 class="text-2xl font-black mb-4">WIND ULTIMATE</h3>
+                    <ul class="text-gray-500 text-sm space-y-3 mb-10">
+                        <li><i class="bi bi-check2 text-emerald-500"></i> All Modules Included</li>
+                        <li><i class="bi bi-check2 text-emerald-500"></i> Cloud Configs</li>
+                        <li><i class="bi bi-check2 text-emerald-500"></i> Priority Support</li>
+                    </ul>
+                    <div class="text-4xl font-black mb-8">1490₽</div>
+                    <button class="btn-mint w-full py-4 rounded-2xl">PURCHASE</button>
+                </div>
+                <div class="glass p-10 rounded-[3rem] flex flex-col justify-center items-center border-dashed border-2 border-white/10">
+                    <p class="text-gray-500 mb-4 italic">Есть ключ активации?</p>
+                    <input type="text" id="k-redeem" placeholder="WIND-XXXX-XXXX" class="w-full bg-white/5 p-4 rounded-2xl mb-4 text-center font-mono">
+                    <button onclick="redeem()" class="w-full py-4 glass rounded-2xl font-bold">ACTIVATE</button>
+                </div>
+            </div>
+        </section>
+
+        <section id="p-video" class="page hidden text-center">
+            <h2 class="text-4xl font-black mb-10">Client <span class="text-emerald-500">Showcase</span></h2>
+            <div id="video-frame" class="aspect-video max-w-4xl mx-auto glass rounded-[3rem] overflow-hidden flex items-center justify-center">
+                <p class="text-gray-600 italic">Видео загружается...</p>
+            </div>
+            <div id="admin-video-ctrl" class="hidden mt-10 max-w-md mx-auto p-6 glass rounded-2xl">
+                <input type="text" id="v-id" placeholder="YouTube ID" class="w-full p-3 rounded-xl mb-4">
+                <button onclick="setVideo()" class="btn-mint w-full py-2 rounded-xl">Set New Video</button>
+            </div>
+        </section>
+
+        <section id="p-settings" class="page hidden max-w-2xl mx-auto glass p-10 rounded-[3rem]">
+            <h2 class="text-2xl font-black mb-8">Site Settings</h2>
+            <div class="space-y-6">
+                <div class="flex justify-between items-center">
+                    <span>Звуки природы (Дождь)</span>
+                    <button onclick="toggleRain()" id="rain-btn" class="glass px-4 py-2 rounded-lg text-xs">OFF</button>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span>Акцент сайта</span>
+                    <div class="flex gap-2">
+                        <div onclick="setAccent('#22c55e')" class="w-6 h-6 rounded-full bg-emerald-500 cursor-pointer"></div>
+                        <div onclick="setAccent('#a855f7')" class="w-6 h-6 rounded-full bg-purple-500 cursor-pointer"></div>
+                        <div onclick="setAccent('#3b82f6')" class="w-6 h-6 rounded-full bg-blue-500 cursor-pointer"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <div id="modal-auth" class="fixed inset-0 bg-black/80 backdrop-blur-md z-[500] hidden flex items-center justify-center p-6">
+        <div class="glass p-10 rounded-[3rem] w-full max-w-sm relative">
+            <button onclick="hideAuth()" class="absolute top-6 right-6 text-gray-500">✕</button>
+            <h2 class="text-3xl font-black mb-8 italic">Welcome <span class="text-emerald-500">Back</span></h2>
             <div class="space-y-4">
-                <input type="text" id="u-nick" placeholder="Username" class="w-full p-4 rounded-2xl">
-                <input type="password" id="u-pass" placeholder="Password" class="w-full p-4 rounded-2xl">
-                <button onclick="auth()" class="btn-zen w-full py-5 rounded-2xl font-black uppercase text-xs tracking-widest">Подтвердить</button>
+                <input type="text" id="u-nick" placeholder="Username" class="w-full p-4 rounded-2xl bg-white/5 outline-none border border-white/5">
+                <input type="password" id="u-pass" placeholder="Password" class="w-full p-4 rounded-2xl bg-white/5 outline-none border border-white/5">
+                <button onclick="handleAuth()" class="btn-mint w-full py-5 rounded-2xl text-xs uppercase tracking-widest font-black">Identify</button>
             </div>
         </div>
     </div>
 
-    <div id="screen-user" class="hidden max-w-4xl mx-auto space-y-6">
-        <div class="glass p-10 rounded-[3rem]">
-            <h2 class="text-3xl font-black mb-2">Welcome, <span id="display-name" class="text-purple-400">User</span></h2>
-            <p class="text-gray-500 text-sm mb-8">Статус вашей подписки отображается ниже.</p>
-            <div class="grid grid-cols-2 gap-4">
-                <div class="bg-white/5 p-6 rounded-3xl">
-                    <p class="text-[10px] uppercase text-gray-500">Подписка</p>
-                    <p id="sub-status" class="font-bold">None</p>
-                </div>
-                <div class="bg-white/5 p-6 rounded-3xl">
-                    <p class="text-[10px] uppercase text-gray-500">Ранг</p>
-                    <p id="rank-status" class="font-bold">Member</p>
-                </div>
-            </div>
-            <div class="mt-8">
-                <input type="text" id="activate-key" placeholder="WIND-XXXX-XXXX" class="w-full p-4 rounded-2xl mb-4">
-                <button onclick="redeem()" class="btn-zen w-full py-4 rounded-2xl font-bold">АКТИВИРОВАТЬ КЛЮЧ</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="screen-admin" class="hidden space-y-6 max-w-6xl mx-auto pb-20">
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div class="glass p-8 rounded-[2.5rem] md:col-span-2">
-                <h3 class="text-xl font-black mb-6 italic">DEVELOPER <span class="text-purple-400">TOOLS</span></h3>
-                <div class="grid grid-cols-2 gap-6">
-                    <div class="space-y-4">
-                        <p class="text-[10px] uppercase text-gray-500">Генератор</p>
-                        <select id="k-type" class="w-full p-4 glass rounded-2xl outline-none">
-                            <option value="Lifetime">Lifetime Premium+</option>
-                            <option value="30_Days">30 Days</option>
-                        </select>
-                        <button onclick="genKey()" class="btn-zen w-full py-3 rounded-xl font-bold">СОЗДАТЬ КЛЮЧ</button>
-                    </div>
-                    <div class="space-y-4">
-                        <p class="text-[10px] uppercase text-gray-500">Ранги</p>
-                        <input type="text" id="t-user" placeholder="Nickname" class="w-full p-4 rounded-2xl">
-                        <button onclick="setRank('Admin')" class="w-full border border-red-500/30 text-red-500 py-3 rounded-xl hover:bg-red-500 hover:text-white transition">GIVE ADMIN</button>
-                    </div>
-                </div>
-            </div>
-            <div class="glass p-8 rounded-[2.5rem]">
-                <h3 class="text-xs uppercase text-gray-500 mb-6">Database Stats</h3>
-                <div class="space-y-4 mono text-sm">
-                    <div class="flex justify-between"><span>Users:</span> <span id="stat-users">0</span></div>
-                    <div class="flex justify-between"><span>Keys:</span> <span id="stat-keys">0</span></div>
-                </div>
-            </div>
-        </div>
-
-        <div class="glass p-8 rounded-[2.5rem]">
-            <h3 class="text-xs uppercase text-gray-500 mb-6">User Registry</h3>
-            <div id="user-list" class="space-y-2 max-h-60 overflow-y-auto pr-4">
-                </div>
-        </div>
-    </div>
-
-    <audio id="snd-rain" loop src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3"></audio>
+    <div id="hidden-yt" class="hidden"></div>
 
     <script>
         const firebaseConfig = {
@@ -119,126 +169,107 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        let tabMode = 'login';
         let currentUser = null;
 
-        function notify(text, err = false) {
-            const n = document.getElementById('notif');
-            n.innerText = text;
-            n.style.borderColor = err ? '#ef4444' : 'var(--accent)';
-            n.style.opacity = '1';
-            n.style.transform = 'translateY(0)';
-            setTimeout(() => { n.style.opacity = '0'; n.style.transform = 'translateY(-50px)'; }, 3000);
-        }
+        // --- AUTH ---
+        function showAuth() { document.getElementById('modal-auth').classList.remove('hidden'); }
+        function hideAuth() { document.getElementById('modal-auth').classList.add('hidden'); }
 
-        function setTab(t) {
-            tabMode = t;
-            document.getElementById('tab-l').className = t === 'login' ? "text-purple-400 border-b border-purple-400" : "text-gray-600";
-            document.getElementById('tab-r').className = t === 'reg' ? "text-purple-400 border-b border-purple-400" : "text-gray-600";
-        }
-
-        // --- ГЛАВНАЯ ЛОГИКА ВХОДА ---
-        function auth() {
+        function handleAuth() {
             const u = document.getElementById('u-nick').value.trim();
             const p = document.getElementById('u-pass').value.trim();
-            if(!u || !p) return notify("Заполните поля", true);
+            if(!u || !p) return;
 
-            if(tabMode === 'reg') {
-                db.ref('users/' + u).set({ password: p, rank: 'Member', sub: 'None' });
-                notify("Аккаунт создан!");
-                setTab('login');
-            } else {
-                // Прямой доступ к папке юзера
-                db.ref('users/' + u).once('value', snap => {
-                    const data = snap.val();
-                    if(snap.exists()) {
-                        if(data.password === p) {
-                            currentUser = u;
-                            loginSuccess(data);
-                        } else {
-                            notify("Неверный пароль", true);
-                        }
-                    } else {
-                        notify("Юзер не найден", true);
-                    }
-                });
-            }
-        }
-
-        function loginSuccess(data) {
-            notify("Привет, " + currentUser);
-            document.getElementById('screen-auth').classList.add('hidden');
-            document.getElementById('user-tag').innerText = "Logged as: " + currentUser;
-            
-            if(currentUser.toLowerCase() === 'developer') {
-                document.getElementById('screen-admin').classList.remove('hidden');
-                loadAdminData();
-            } else {
-                document.getElementById('screen-user').classList.remove('hidden');
-                document.getElementById('display-name').innerText = currentUser;
-                document.getElementById('sub-status').innerText = data.sub;
-                document.getElementById('rank-status').innerText = data.rank;
-            }
-        }
-
-        // --- АДМИН ФУНКЦИИ ---
-        function loadAdminData() {
-            db.ref('users').on('value', s => {
-                const list = document.getElementById('user-list');
-                list.innerHTML = "";
-                let count = 0;
-                s.forEach(user => {
-                    count++;
-                    list.innerHTML += `<div class="flex justify-between p-3 bg-white/5 rounded-xl text-xs mono">
-                        <span>${user.key} [${user.val().rank}]</span>
-                        <button onclick="deleteUser('${user.key}')" class="text-red-500">DEL</button>
-                    </div>`;
-                });
-                document.getElementById('stat-users').innerText = count;
-            });
-            db.ref('keys').on('value', s => {
-                document.getElementById('stat-keys').innerText = s.numChildren();
+            db.ref('users/' + u).once('value', s => {
+                if(s.exists() && s.val().password === p) {
+                    login(u, s.val());
+                } else if(!s.exists()) {
+                    db.ref('users/' + u).set({ password: p, rank: 'User' });
+                    login(u, { rank: 'User' });
+                } else { alert("Error!"); }
             });
         }
 
-        function genKey() {
-            const k = "WIND-" + Math.random().toString(36).substring(2, 10).toUpperCase();
-            db.ref('keys/' + k).set({ type: document.getElementById('k-type').value });
-            notify("Key Generated: " + k);
+        function login(nick, data) {
+            currentUser = nick;
+            hideAuth();
+            document.getElementById('auth-buttons').classList.add('hidden');
+            document.getElementById('user-info').classList.remove('hidden');
+            document.getElementById('user-info').innerText = nick.toUpperCase();
+            if(nick.toLowerCase() === 'developer') document.getElementById('admin-video-ctrl').classList.remove('hidden');
+            initChat();
+            initVideo();
         }
 
-        function deleteUser(name) {
-            if(confirm("Удалить " + name + "?")) db.ref('users/' + name).remove();
+        // --- NAVIGATION ---
+        function showPage(id) {
+            document.querySelectorAll('.page').forEach(p => p.classList.add('hidden'));
+            document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+            document.getElementById('p-' + id).classList.remove('hidden');
+            document.getElementById('n-' + id).classList.add('active');
         }
 
-        function setRank(r) {
-            const t = document.getElementById('t-user').value;
-            db.ref('users/' + t).update({ rank: r });
-            notify("Rank updated for " + t);
+        // --- CHAT ---
+        function initChat() {
+            db.ref('chat').limitToLast(15).on('value', s => {
+                const box = document.getElementById('chat-box');
+                box.innerHTML = "";
+                s.forEach(m => {
+                    const isDev = m.val().nick === 'developer';
+                    box.innerHTML += `<div><span class="${isDev ? 'text-emerald-400 font-bold' : 'text-gray-500'}">${m.val().nick}:</span> <span class="text-gray-300">${m.val().msg}</span></div>`;
+                });
+                box.scrollTop = box.scrollHeight;
+            });
         }
 
-        // --- ЮЗЕР ФУНКЦИИ ---
-        function redeem() {
-            const k = document.getElementById('activate-key').value.trim();
-            db.ref('keys/' + k).once('value', s => {
-                if(s.exists()) {
-                    db.ref('users/' + currentUser).update({ sub: s.val().type });
-                    db.ref('keys/' + k).remove();
-                    notify("Подписка активирована!");
-                    location.reload();
-                } else {
-                    notify("Неверный ключ", true);
+        function sendMsg() {
+            const m = document.getElementById('chat-in').value;
+            if(!m || !currentUser) return;
+            db.ref('chat').push({ nick: currentUser, msg: m });
+            document.getElementById('chat-in').value = "";
+        }
+
+        // --- MUSIC ---
+        function loadMusic() {
+            const url = document.getElementById('m-url').value;
+            if(!url.includes('v=')) return;
+            const id = url.split('v=')[1].split('&')[0];
+            document.getElementById('hidden-yt').innerHTML = `<iframe src="https://www.youtube.com/embed/${id}?autoplay=1" allow="autoplay"></iframe>`;
+            document.getElementById('track-name').innerText = "Streaming via YouTube";
+        }
+
+        // --- VIDEO ---
+        function initVideo() {
+            db.ref('settings/v_id').on('value', s => {
+                const id = s.val() || 'dQw4w9WgXcQ';
+                document.getElementById('video-frame').innerHTML = `<iframe width="100%" height="100%" src="https://www.youtube.com/embed/${id}" frameborder="0" allowfullscreen></iframe>`;
+            });
+        }
+        function setVideo() {
+            const id = document.getElementById('v-id').value;
+            db.ref('settings/v_id').set(id);
+        }
+
+        // --- RAIN & ACCENT ---
+        function toggleRain() {
+            const l = document.getElementById('rain-layer');
+            if(!l.innerHTML) {
+                for(let i=0; i<30; i++) {
+                    const d = document.createElement('div');
+                    d.className = 'rain';
+                    d.style.left = Math.random() * 100 + 'vw';
+                    d.style.animationDuration = Math.random() * 0.5 + 0.5 + 's';
+                    l.appendChild(d);
                 }
-            });
+                document.getElementById('rain-btn').innerText = "ON";
+            } else {
+                l.innerHTML = "";
+                document.getElementById('rain-btn').innerText = "OFF";
+            }
         }
 
-        // Дождь
-        for(let i=0; i<50; i++) {
-            const d = document.createElement('div');
-            d.className = 'drop';
-            d.style.left = Math.random() * 100 + 'vw';
-            d.style.animationDuration = Math.random() * 0.5 + 0.5 + 's';
-            document.getElementById('rain-box').appendChild(d);
+        function setAccent(c) {
+            document.documentElement.style.setProperty('--accent', c);
         }
     </script>
 </body>
