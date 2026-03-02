@@ -2,143 +2,112 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>WIND | Rainy Zen</title>
+    <title>WIND | Ultimate OS</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono&family=Plus+Jakarta+Sans:wght@300;800&display=swap" rel="stylesheet">
 
     <style>
-        :root { --accent: #8b5cf6; --bg: #050505; }
-        body { 
-            background: var(--bg); 
-            color: white; 
-            font-family: 'Plus Jakarta Sans', sans-serif; 
-            overflow: hidden;
-            user-select: none;
-        }
-
+        :root { --accent: #8b5cf6; --bg: #030303; }
+        body { background: var(--bg); color: white; font-family: 'Plus Jakarta Sans', sans-serif; overflow: hidden; }
+        .glass { background: rgba(10, 10, 10, 0.4); backdrop-filter: blur(40px); border: 1px solid rgba(255, 255, 255, 0.05); }
+        .btn-zen { background: var(--accent); transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1); cursor: pointer; }
+        .btn-zen:hover { transform: scale(1.02); box-shadow: 0 0 30px var(--accent); }
+        input { background: rgba(255,255,255,0.02) !important; border: 1px solid rgba(255,255,255,0.1) !important; color: white !important; outline: none; transition: 0.3s; }
+        input:focus { border-color: var(--accent) !important; background: rgba(255,255,255,0.05) !important; }
+        
         /* Дождь */
-        .drop {
-            position: absolute;
-            background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0.4));
-            width: 1px;
-            height: 80px;
-            top: -100px;
-            pointer-events: none;
-            animation: fall linear infinite;
-        }
+        .drop { position: absolute; background: white; width: 1px; height: 50px; opacity: 0.2; pointer-events: none; animation: fall linear infinite; }
         @keyframes fall { to { transform: translateY(110vh); } }
 
-        /* Стекло и Кнопки */
-        .glass {
-            background: rgba(15, 15, 15, 0.4);
-            backdrop-filter: blur(25px);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
-            transition: all 0.6s cubic-bezier(0.23, 1, 0.32, 1);
-        }
-
-        .input-zen {
-            background: rgba(255,255,255,0.03);
-            border: 1px solid rgba(255,255,255,0.05);
-            transition: 0.4s;
-            outline: none;
-        }
-        .input-zen:focus { border-color: var(--accent); background: rgba(255,255,255,0.06); }
-
-        .btn-zen {
-            background: var(--accent);
-            color: white;
-            font-weight: 800;
-            letter-spacing: 1px;
-            transition: all 0.4s;
-            cursor: pointer;
-            position: relative;
-            overflow: hidden;
-        }
-        .btn-zen:hover { transform: translateY(-2px); filter: brightness(1.2); box-shadow: 0 0 30px var(--accent); }
-        .btn-zen:active { transform: scale(0.96); }
-
-        /* Плавное появление */
-        .page-enter { animation: pageEnter 1.5s ease-out forwards; }
-        @keyframes pageEnter {
-            from { opacity: 0; filter: blur(20px); transform: scale(1.1); }
-            to { opacity: 1; filter: blur(0); transform: scale(1); }
-        }
-
-        /* Уведомление */
-        #notif {
-            position: fixed;
-            bottom: 40px;
-            left: 50%;
-            transform: translate(-50%, 100px);
-            transition: 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            z-index: 1000;
-        }
-        #notif.active { transform: translate(-50%, 0); }
+        .hidden { display: none !important; }
+        .mono { font-family: 'JetBrains Mono', monospace; }
     </style>
 </head>
-<body class="page-enter">
+<body class="p-6">
 
-    <div id="rain-layer"></div>
-    <div id="notif" class="glass px-8 py-4 rounded-full text-sm font-bold border-purple-500/30"></div>
+    <div id="rain-box"></div>
 
-    <div class="fixed top-6 right-6 z-50">
-        <button onclick="toggleSet()" class="glass w-12 h-12 rounded-full flex items-center justify-center hover:rotate-45">⚙️</button>
-        <div id="set-box" class="hidden absolute top-16 right-0 glass p-6 rounded-3xl w-64">
-            <p class="text-[10px] text-gray-500 mb-3 uppercase tracking-widest">Ambient Color</p>
-            <div class="flex gap-2 mb-6">
-                <div onclick="setClr('#a3e635')" class="w-6 h-6 rounded-full bg-lime-400 cursor-pointer"></div>
-                <div onclick="setClr('#8b5cf6')" class="w-6 h-6 rounded-full bg-purple-500 cursor-pointer"></div>
-                <div onclick="setClr('#06b6d4')" class="w-6 h-6 rounded-full bg-cyan-400 cursor-pointer"></div>
-                <div onclick="setClr('#f43f5e')" class="w-6 h-6 rounded-full bg-rose-500 cursor-pointer"></div>
+    <div id="notif" class="fixed top-10 left-1/2 -translate-x-1/2 glass px-8 py-3 rounded-2xl z-[1000] transition-all duration-500 opacity-0 translate-y-[-50px]"></div>
+
+    <nav class="flex justify-between items-center mb-10 relative z-50">
+        <h1 class="text-4xl font-black italic tracking-tighter" style="color: var(--accent)">WIND</h1>
+        <div id="user-tag" class="text-[10px] font-bold opacity-50 uppercase tracking-widest">Guest Mode</div>
+    </nav>
+
+    <div id="screen-auth" class="flex flex-col items-center justify-center min-h-[70vh]">
+        <div class="glass p-10 rounded-[3rem] w-full max-w-sm relative overflow-hidden">
+            <div class="flex justify-around mb-10 text-[10px] font-black uppercase">
+                <button onclick="setTab('login')" id="tab-l" class="text-purple-400 border-b border-purple-400">Вход</button>
+                <button onclick="setTab('reg')" id="tab-r" class="text-gray-600">Регистрация</button>
             </div>
-            <button onclick="togglePlay()" id="play-btn" class="w-full glass py-2 rounded-xl text-xs">Play Relaxing Music 🎧</button>
-        </div>
-    </div>
-
-    <div class="min-h-screen flex flex-col items-center justify-center p-6">
-        <h1 id="main-logo" class="text-8xl font-black italic mb-12 tracking-tighter transition-all duration-1000" style="color: var(--accent); text-shadow: 0 0 40px var(--accent);">WIND</h1>
-
-        <div id="auth-ui" class="glass p-10 rounded-[3rem] w-full max-w-sm">
-            <div class="flex justify-center gap-8 mb-10 text-[10px] font-black uppercase tracking-[3px]">
-                <button onclick="setTab('login')" id="l-tab" class="text-purple-400">LOGIN</button>
-                <button onclick="setTab('reg')" id="r-tab" class="text-gray-600">REGISTER</button>
-            </div>
-
             <div class="space-y-4">
-                <input type="text" id="u-nick" placeholder="Username" class="input-zen w-full p-4 rounded-2xl">
-                <input type="password" id="u-pass" placeholder="Password" class="input-zen w-full p-4 rounded-2xl">
-                <button onclick="startAuth()" class="btn-zen w-full py-5 rounded-2xl uppercase text-xs tracking-widest">Confirm</button>
-            </div>
-        </div>
-
-        <div id="admin-ui" class="hidden glass p-12 rounded-[4rem] w-full max-w-5xl">
-            <div class="flex justify-between items-center mb-16">
-                <h2 class="text-4xl font-black italic tracking-tighter">WIND <span style="color: var(--accent)">MASTER</span></h2>
-                <button onclick="location.reload()" class="text-gray-500 hover:text-red-500 transition">EXIT</button>
-            </div>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-12">
-                <div class="glass p-8 rounded-[2.5rem]">
-                    <p class="text-[10px] text-gray-500 mb-6 uppercase">License Factory</p>
-                    <select id="k-type" class="w-full bg-black/40 p-4 rounded-2xl mb-6 outline-none text-sm">
-                        <option value="lifetime_premium_plus">Lifetime Premium+</option>
-                        <option value="360_days">360 Days Access</option>
-                    </select>
-                    <button onclick="genKey()" class="btn-zen w-full py-4 rounded-xl text-xs uppercase">Generate</button>
-                </div>
-                <div class="glass p-8 rounded-[2.5rem]">
-                    <p class="text-[10px] text-gray-500 mb-6 uppercase">Privileges</p>
-                    <input type="text" id="target" placeholder="User nickname" class="input-zen w-full p-4 rounded-2xl mb-4 text-sm">
-                    <button onclick="giveAdm()" class="w-full py-4 rounded-xl text-xs uppercase border border-red-500/30 text-red-500 hover:bg-red-500 hover:text-white transition">Give Administrator</button>
-                </div>
+                <input type="text" id="u-nick" placeholder="Username" class="w-full p-4 rounded-2xl">
+                <input type="password" id="u-pass" placeholder="Password" class="w-full p-4 rounded-2xl">
+                <button onclick="auth()" class="btn-zen w-full py-5 rounded-2xl font-black uppercase text-xs tracking-widest">Подтвердить</button>
             </div>
         </div>
     </div>
 
-    <audio id="ambience" loop src="https://stream.zeno.fm/0r0xa792kwzuv"></audio> <audio id="click-ok" src="https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3"></audio>
-    <audio id="click-err" src="https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3"></audio>
+    <div id="screen-user" class="hidden max-w-4xl mx-auto space-y-6">
+        <div class="glass p-10 rounded-[3rem]">
+            <h2 class="text-3xl font-black mb-2">Welcome, <span id="display-name" class="text-purple-400">User</span></h2>
+            <p class="text-gray-500 text-sm mb-8">Статус вашей подписки отображается ниже.</p>
+            <div class="grid grid-cols-2 gap-4">
+                <div class="bg-white/5 p-6 rounded-3xl">
+                    <p class="text-[10px] uppercase text-gray-500">Подписка</p>
+                    <p id="sub-status" class="font-bold">None</p>
+                </div>
+                <div class="bg-white/5 p-6 rounded-3xl">
+                    <p class="text-[10px] uppercase text-gray-500">Ранг</p>
+                    <p id="rank-status" class="font-bold">Member</p>
+                </div>
+            </div>
+            <div class="mt-8">
+                <input type="text" id="activate-key" placeholder="WIND-XXXX-XXXX" class="w-full p-4 rounded-2xl mb-4">
+                <button onclick="redeem()" class="btn-zen w-full py-4 rounded-2xl font-bold">АКТИВИРОВАТЬ КЛЮЧ</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="screen-admin" class="hidden space-y-6 max-w-6xl mx-auto pb-20">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="glass p-8 rounded-[2.5rem] md:col-span-2">
+                <h3 class="text-xl font-black mb-6 italic">DEVELOPER <span class="text-purple-400">TOOLS</span></h3>
+                <div class="grid grid-cols-2 gap-6">
+                    <div class="space-y-4">
+                        <p class="text-[10px] uppercase text-gray-500">Генератор</p>
+                        <select id="k-type" class="w-full p-4 glass rounded-2xl outline-none">
+                            <option value="Lifetime">Lifetime Premium+</option>
+                            <option value="30_Days">30 Days</option>
+                        </select>
+                        <button onclick="genKey()" class="btn-zen w-full py-3 rounded-xl font-bold">СОЗДАТЬ КЛЮЧ</button>
+                    </div>
+                    <div class="space-y-4">
+                        <p class="text-[10px] uppercase text-gray-500">Ранги</p>
+                        <input type="text" id="t-user" placeholder="Nickname" class="w-full p-4 rounded-2xl">
+                        <button onclick="setRank('Admin')" class="w-full border border-red-500/30 text-red-500 py-3 rounded-xl hover:bg-red-500 hover:text-white transition">GIVE ADMIN</button>
+                    </div>
+                </div>
+            </div>
+            <div class="glass p-8 rounded-[2.5rem]">
+                <h3 class="text-xs uppercase text-gray-500 mb-6">Database Stats</h3>
+                <div class="space-y-4 mono text-sm">
+                    <div class="flex justify-between"><span>Users:</span> <span id="stat-users">0</span></div>
+                    <div class="flex justify-between"><span>Keys:</span> <span id="stat-keys">0</span></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="glass p-8 rounded-[2.5rem]">
+            <h3 class="text-xs uppercase text-gray-500 mb-6">User Registry</h3>
+            <div id="user-list" class="space-y-2 max-h-60 overflow-y-auto pr-4">
+                </div>
+        </div>
+    </div>
+
+    <audio id="snd-rain" loop src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3"></audio>
 
     <script>
         const firebaseConfig = {
@@ -150,94 +119,126 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        let tab = 'login';
+        let tabMode = 'login';
+        let currentUser = null;
 
-        function msg(text, success = true) {
+        function notify(text, err = false) {
             const n = document.getElementById('notif');
             n.innerText = text;
-            n.style.color = success ? '#fff' : '#ff4e4e';
-            n.classList.add('active');
-            setTimeout(() => n.classList.remove('active'), 3000);
-            document.getElementById(success ? 'click-ok' : 'click-err').play();
+            n.style.borderColor = err ? '#ef4444' : 'var(--accent)';
+            n.style.opacity = '1';
+            n.style.transform = 'translateY(0)';
+            setTimeout(() => { n.style.opacity = '0'; n.style.transform = 'translateY(-50px)'; }, 3000);
         }
 
         function setTab(t) {
-            tab = t;
-            document.getElementById('l-tab').className = t === 'login' ? "text-purple-400" : "text-gray-600";
-            document.getElementById('r-tab').className = t === 'reg' ? "text-purple-400" : "text-gray-600";
+            tabMode = t;
+            document.getElementById('tab-l').className = t === 'login' ? "text-purple-400 border-b border-purple-400" : "text-gray-600";
+            document.getElementById('tab-r').className = t === 'reg' ? "text-purple-400 border-b border-purple-400" : "text-gray-600";
         }
 
-        function startAuth() {
+        // --- ГЛАВНАЯ ЛОГИКА ВХОДА ---
+        function auth() {
             const u = document.getElementById('u-nick').value.trim();
             const p = document.getElementById('u-pass').value.trim();
-            if(!u || !p) return msg("Field is empty", false);
+            if(!u || !p) return notify("Заполните поля", true);
 
-            if(tab === 'reg') {
-                db.ref('users/' + u).set({ password: p, rank: 'User' });
-                msg("Account Created");
+            if(tabMode === 'reg') {
+                db.ref('users/' + u).set({ password: p, rank: 'Member', sub: 'None' });
+                notify("Аккаунт создан!");
                 setTab('login');
             } else {
-                db.ref('users/' + u).once('value').then(snap => {
+                // Прямой доступ к папке юзера
+                db.ref('users/' + u).once('value', snap => {
+                    const data = snap.val();
                     if(snap.exists()) {
-                        msg("User found...");
-                        setTimeout(() => {
-                            if(snap.val().password === p) {
-                                msg("Password correct!");
-                                setTimeout(() => {
-                                    document.getElementById('auth-ui').classList.add('hidden');
-                                    if(u.toLowerCase() === 'developer') document.getElementById('admin-ui').classList.remove('hidden');
-                                }, 800);
-                            } else {
-                                msg("Wrong password", false);
-                            }
-                        }, 1000);
+                        if(data.password === p) {
+                            currentUser = u;
+                            loginSuccess(data);
+                        } else {
+                            notify("Неверный пароль", true);
+                        }
                     } else {
-                        msg("User not found", false);
+                        notify("Юзер не найден", true);
                     }
                 });
             }
         }
 
-        // Рандомный дождь
-        function createRain() {
-            const container = document.getElementById('rain-layer');
-            for(let i=0; i<100; i++) {
-                const drop = document.createElement('div');
-                drop.className = 'drop';
-                drop.style.left = Math.random() * 100 + 'vw';
-                drop.style.animationDuration = (Math.random() * 0.5 + 0.5) + 's';
-                drop.style.animationDelay = Math.random() * 2 + 's';
-                container.appendChild(drop);
+        function loginSuccess(data) {
+            notify("Привет, " + currentUser);
+            document.getElementById('screen-auth').classList.add('hidden');
+            document.getElementById('user-tag').innerText = "Logged as: " + currentUser;
+            
+            if(currentUser.toLowerCase() === 'developer') {
+                document.getElementById('screen-admin').classList.remove('hidden');
+                loadAdminData();
+            } else {
+                document.getElementById('screen-user').classList.remove('hidden');
+                document.getElementById('display-name').innerText = currentUser;
+                document.getElementById('sub-status').innerText = data.sub;
+                document.getElementById('rank-status').innerText = data.rank;
             }
         }
-        createRain();
 
-        function toggleSet() { document.getElementById('set-box').classList.toggle('hidden'); }
-        function setClr(c) { 
-            document.documentElement.style.setProperty('--accent', c);
-            document.getElementById('main-logo').style.textShadow = `0 0 40px ${c}`;
-        }
-        
-        let playing = false;
-        function togglePlay() {
-            const a = document.getElementById('ambience');
-            const b = document.getElementById('play-btn');
-            if(!playing) { a.play(); b.innerText = "Music: ON"; }
-            else { a.pause(); b.innerText = "Music: OFF"; }
-            playing = !playing;
+        // --- АДМИН ФУНКЦИИ ---
+        function loadAdminData() {
+            db.ref('users').on('value', s => {
+                const list = document.getElementById('user-list');
+                list.innerHTML = "";
+                let count = 0;
+                s.forEach(user => {
+                    count++;
+                    list.innerHTML += `<div class="flex justify-between p-3 bg-white/5 rounded-xl text-xs mono">
+                        <span>${user.key} [${user.val().rank}]</span>
+                        <button onclick="deleteUser('${user.key}')" class="text-red-500">DEL</button>
+                    </div>`;
+                });
+                document.getElementById('stat-users').innerText = count;
+            });
+            db.ref('keys').on('value', s => {
+                document.getElementById('stat-keys').innerText = s.numChildren();
+            });
         }
 
         function genKey() {
-            const key = "WIND-" + Math.random().toString(36).substring(2, 10).toUpperCase();
-            db.ref('keys/' + key).set({ type: document.getElementById('k-type').value });
-            msg("Key: " + key);
+            const k = "WIND-" + Math.random().toString(36).substring(2, 10).toUpperCase();
+            db.ref('keys/' + k).set({ type: document.getElementById('k-type').value });
+            notify("Key Generated: " + k);
         }
 
-        function giveAdm() {
-            const t = document.getElementById('target').value;
-            if(!t) return msg("Nick required", false);
-            db.ref('users/' + t).update({ rank: 'Admin' });
-            msg("Admin status granted");
+        function deleteUser(name) {
+            if(confirm("Удалить " + name + "?")) db.ref('users/' + name).remove();
+        }
+
+        function setRank(r) {
+            const t = document.getElementById('t-user').value;
+            db.ref('users/' + t).update({ rank: r });
+            notify("Rank updated for " + t);
+        }
+
+        // --- ЮЗЕР ФУНКЦИИ ---
+        function redeem() {
+            const k = document.getElementById('activate-key').value.trim();
+            db.ref('keys/' + k).once('value', s => {
+                if(s.exists()) {
+                    db.ref('users/' + currentUser).update({ sub: s.val().type });
+                    db.ref('keys/' + k).remove();
+                    notify("Подписка активирована!");
+                    location.reload();
+                } else {
+                    notify("Неверный ключ", true);
+                }
+            });
+        }
+
+        // Дождь
+        for(let i=0; i<50; i++) {
+            const d = document.createElement('div');
+            d.className = 'drop';
+            d.style.left = Math.random() * 100 + 'vw';
+            d.style.animationDuration = Math.random() * 0.5 + 0.5 + 's';
+            document.getElementById('rain-box').appendChild(d);
         }
     </script>
 </body>
