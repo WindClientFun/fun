@@ -2,278 +2,133 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WIND | Advanced Software Ecosystem</title>
-    
+    <title>WIND | Developer Entity</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@200;400;600;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Plus+Jakarta+Sans:wght@400;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-
     <style>
-        :root {
-            --primary: #8b5cf6;
-            --secondary: #06b6d4;
-            --dark: #030303;
-            --glass: rgba(15, 15, 15, 0.7);
-        }
-
-        body {
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            background-color: var(--dark);
-            color: #fff;
-            overflow-x: hidden;
-            scroll-behavior: smooth;
-        }
-
-        /* Кастомный курсор */
-        #cursor {
-            width: 20px;
-            height: 20px;
-            background: var(--primary);
-            border-radius: 50%;
-            position: fixed;
-            pointer-events: none;
-            z-index: 9999;
-            mix-blend-mode: difference;
-            transition: transform 0.1s ease;
-        }
-
-        /* Эффект Glassmorphism */
-        .glass {
-            background: var(--glass);
-            backdrop-filter: blur(20px) saturate(180%);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        /* Анимированный градиентный текст */
-        .gradient-text {
-            background: linear-gradient(90deg, #fff, var(--primary), var(--secondary), #fff);
-            background-size: 300% 100%;
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            animation: gradientMove 8s linear infinite;
-        }
-
-        @keyframes gradientMove {
-            0% { background-position: 0% 50%; }
-            100% { background-position: 300% 50%; }
-        }
-
-        /* Секция Hero */
-        .hero-glow {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 60vw;
-            height: 60vw;
-            background: radial-gradient(circle, rgba(139, 92, 246, 0.15) 0%, transparent 70%);
-            z-index: -1;
-        }
-
-        /* Компонент Карточки */
-        .feature-card {
-            transition: all 0.5s cubic-bezier(0.23, 1, 0.32, 1);
-        }
-
-        .feature-card:hover {
-            transform: translateY(-10px) scale(1.02);
-            border-color: var(--primary);
-            box-shadow: 0 20px 40px rgba(139, 92, 246, 0.1);
-        }
-
-        /* Навбар */
-        nav {
-            transform: translateY(0);
-            transition: 0.5s;
-        }
-
-        nav.hidden-nav {
-            transform: translateY(-100%);
-        }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background: #020202; color: white; overflow-x: hidden; }
+        .glass { background: rgba(10, 10, 10, 0.8); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.05); }
+        .mono { font-family: 'JetBrains Mono', monospace; }
+        .accent-border { border-left: 4px solid #8b5cf6; }
+        input { background: rgba(255,255,255,0.03) !important; border: 1px solid rgba(255,255,255,0.1) !important; color: white !important; }
+        .btn-purple { background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%); transition: 0.3s; }
+        .btn-purple:hover { opacity: 0.9; transform: translateY(-2px); box-shadow: 0 5px 20px rgba(139, 92, 246, 0.4); }
     </style>
 </head>
 <body>
 
-    <div id="cursor"></div>
-    <canvas id="bg-canvas" class="fixed top-0 left-0 w-full h-full -z-10"></canvas>
+    <div id="login-screen" class="fixed inset-0 z-[2000] bg-black flex items-center justify-center">
+        <div class="glass p-10 rounded-[2.5rem] w-full max-w-md text-center border border-white/10">
+            <i class="bi bi-shield-lock text-5xl text-purple-500 mb-6 inline-block"></i>
+            <h2 class="text-3xl font-black mb-2">AUTH REQUIRED</h2>
+            <p class="text-gray-500 mb-8 text-sm">Введите никнейм для доступа к системе</p>
+            <input type="text" id="auth-nick" placeholder="Username" class="w-full p-4 rounded-2xl mb-4 outline-none">
+            <button onclick="checkAuth()" class="w-full btn-purple p-4 rounded-2xl font-bold">ACCESS SYSTEM</button>
+        </div>
+    </div>
 
-    <nav id="navbar" class="fixed w-full z-50 px-6 py-4 transition-all">
-        <div class="max-w-7xl mx-auto flex justify-between items-center glass rounded-2xl px-8 py-4">
-            <div class="text-2xl font-extrabold tracking-tighter flex items-center gap-2">
-                <i class="bi bi-wind text-purple-500"></i> WIND
+    <div id="main-ui" class="opacity-0 pointer-events-none transition-all duration-700">
+        
+        <div class="fixed top-6 left-6 z-[100] w-72 glass p-6 rounded-[2rem] accent-border shadow-2xl">
+            <div class="flex items-center gap-3 mb-6">
+                <div class="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
+                <span class="text-[10px] font-bold tracking-widest text-gray-400 uppercase">User Management</span>
             </div>
-            <div class="hidden md:flex gap-8 text-sm font-medium text-gray-400">
-                <a href="#home" class="hover:text-white transition">Home</a>
-                <a href="#features" class="hover:text-white transition">Features</a>
-                <a href="#stats" class="hover:text-white transition">Stats</a>
-                <a href="#store" class="hover:text-white transition">Store</a>
-            </div>
-            <div class="flex gap-4">
-                <button class="px-5 py-2 text-sm font-semibold hover:text-purple-400 transition">Login</button>
-                <button class="bg-white text-black px-6 py-2 rounded-xl text-sm font-bold hover:bg-purple-500 hover:text-white transition-all transform hover:scale-105">
-                    Get Started
-                </button>
+            <input type="text" id="target-user" placeholder="Имя пользователя..." class="w-full p-3 rounded-xl text-xs mb-3 outline-none">
+            <div class="grid grid-cols-2 gap-2">
+                <button onclick="setRole('MODERATOR')" class="bg-blue-500/10 text-blue-400 p-2 rounded-lg text-[10px] font-bold hover:bg-blue-500 hover:text-white transition">MODER</button>
+                <button onclick="setRole('ADMIN')" class="bg-red-500/10 text-red-400 p-2 rounded-lg text-[10px] font-bold hover:bg-red-500 hover:text-white transition">ADMIN</button>
             </div>
         </div>
-    </nav>
 
-    <section id="home" class="relative min-h-screen flex items-center justify-center pt-20">
-        <div class="hero-glow"></div>
-        <div class="text-center z-10 px-4">
-            <div class="inline-block px-4 py-1 glass rounded-full text-xs font-bold text-purple-400 mb-6 border border-purple-500/30">
-                🚀 VERSION 4.0 IS LIVE
-            </div>
-            <h1 class="text-6xl md:text-8xl font-extrabold mb-8 tracking-tighter">
-                ELEVATE YOUR <br><span class="gradient-text">PERFORMANCE</span>
-            </h1>
-            <p class="max-w-2xl mx-auto text-gray-400 text-lg md:text-xl mb-12 font-light">
-                Самое передовое программное обеспечение, созданное для тех, кто не терпит компромиссов. 
-                Минимализм, скорость и мощь в каждом пакете.
-            </p>
-            <div class="flex flex-col md:flex-row gap-6 justify-center items-center">
-                <a href="#store" class="w-full md:w-auto bg-purple-600 px-10 py-4 rounded-2xl font-bold text-lg hover:bg-purple-700 transition shadow-lg shadow-purple-500/20">
-                    Purchase Now
-                </a>
-                <a href="#" class="w-full md:w-auto glass px-10 py-4 rounded-2xl font-bold text-lg hover:bg-white/10 transition">
-                    View Features
-                </a>
-            </div>
-        </div>
-    </section>
-
-    <section id="features" class="py-32 px-6">
-        <div class="max-w-7xl mx-auto">
-            <div class="mb-20">
-                <h2 class="text-4xl font-bold mb-4">ENGINEERED FOR <span class="text-purple-500">EXCELLENCE</span></h2>
-                <div class="h-1 w-20 bg-purple-600"></div>
-            </div>
-            
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-                <div class="feature-card glass p-10 rounded-[2.5rem] relative overflow-hidden group">
-                    <div class="text-5xl mb-8 text-purple-500 group-hover:scale-110 transition-transform duration-500">
-                        <i class="bi bi-cpu"></i>
+        <div class="min-h-screen flex items-center justify-center p-6">
+            <div class="w-full max-w-4xl glass p-12 rounded-[3rem] relative">
+                <div class="absolute -top-10 -right-10 w-40 h-40 bg-purple-600/20 blur-[80px]"></div>
+                
+                <div class="flex flex-col md:flex-row justify-between items-start gap-12">
+                    <div class="flex-1">
+                        <h1 class="text-5xl font-black mb-4 italic tracking-tighter">DEV <span class="text-purple-500">PORTAL</span></h1>
+                        <p class="text-gray-500 mb-10">Управление лицензиями и привилегиями Wind Client v4.0</p>
+                        
+                        <div class="space-y-6">
+                            <div>
+                                <label class="text-xs font-bold text-gray-400 mb-3 block uppercase">Выберите план подписки</label>
+                                <select id="key-type" class="w-full p-4 glass rounded-2xl outline-none text-sm cursor-pointer border border-white/10">
+                                    <option value="30 DAYS">30 Дней (Trial)</option>
+                                    <option value="183 DAYS">183 Дня (Half-Year)</option>
+                                    <option value="360 DAYS">360 Дней (Year)</option>
+                                    <option value="LIFETIME">Навсегда (Lifetime)</option>
+                                    <option value="LIFETIME PREMIUM">Навсегда Premium</option>
+                                    <option value="PREMIUM+">Premium+</option>
+                                    <option value="LIFETIME PREMIUM+">Навсегда Premium+</option>
+                                </select>
+                            </div>
+                            <button onclick="generateKey()" class="w-full btn-purple py-5 rounded-2xl font-black text-lg flex items-center justify-center gap-3">
+                                <i class="bi bi-key-fill"></i> СГЕНЕРИРОВАТЬ КЛЮЧ
+                            </button>
+                        </div>
                     </div>
-                    <h3 class="text-2xl font-bold mb-4">Core Engine</h3>
-                    <p class="text-gray-400 font-light leading-relaxed">
-                        Полностью переписанное ядро на базе ASM-трансформаций. Нулевая задержка и максимальная оптимизация.
-                    </p>
-                </div>
 
-                <div class="feature-card glass p-10 rounded-[2.5rem] relative overflow-hidden group border-t-2 border-purple-500/50">
-                    <div class="text-5xl mb-8 text-cyan-500 group-hover:scale-110 transition-transform duration-500">
-                        <i class="bi bi-shield-check"></i>
+                    <div class="w-full md:w-80 space-y-4">
+                        <div class="glass p-6 rounded-[2rem] border-white/5 h-[350px] flex flex-col">
+                            <h3 class="text-xs font-bold text-gray-500 mb-4 uppercase">Console Output</h3>
+                            <div id="console" class="mono text-[11px] overflow-y-auto flex-1 space-y-2 text-green-500/80">
+                                <p>> System initialized...</p>
+                            </div>
+                        </div>
                     </div>
-                    <h3 class="text-2xl font-bold mb-4">Security First</h3>
-                    <p class="text-gray-400 font-light leading-relaxed">
-                        Многоуровневая защита данных и уникальные алгоритмы обхода самых современных систем детекта.
-                    </p>
-                </div>
-
-                <div class="feature-card glass p-10 rounded-[2.5rem] relative overflow-hidden group">
-                    <div class="text-5xl mb-8 text-pink-500 group-hover:scale-110 transition-transform duration-500">
-                        <i class="bi bi-palette"></i>
-                    </div>
-                    <h3 class="text-2xl font-bold mb-4">Visual Art</h3>
-                    <p class="text-gray-400 font-light leading-relaxed">
-                        Эстетика в каждой детали. Кастомизируемый интерфейс, который вдохновляет на новые победы.
-                    </p>
                 </div>
             </div>
         </div>
-    </section>
-
-    <section id="stats" class="py-20 bg-white/5">
-        <div class="max-w-7xl mx-auto px-6 grid grid-cols-2 md:grid-cols-4 gap-12 text-center">
-            <div>
-                <div class="text-4xl font-extrabold text-purple-500 mb-2">15k+</div>
-                <div class="text-gray-500 uppercase text-xs tracking-widest">Active Users</div>
-            </div>
-            <div>
-                <div class="text-4xl font-extrabold text-white mb-2">99.9%</div>
-                <div class="text-gray-500 uppercase text-xs tracking-widest">Uptime</div>
-            </div>
-            <div>
-                <div class="text-4xl font-extrabold text-purple-500 mb-2">24/7</div>
-                <div class="text-gray-500 uppercase text-xs tracking-widest">Live Support</div>
-            </div>
-            <div>
-                <div class="text-4xl font-extrabold text-white mb-2">200+</div>
-                <div class="text-gray-500 uppercase text-xs tracking-widest">Unique Modules</div>
-            </div>
-        </div>
-    </section>
-
-    <footer class="py-20 px-6 border-t border-white/5">
-        <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-10">
-            <div>
-                <div class="text-2xl font-black mb-4 tracking-tighter italic">WIND SOFTWARE</div>
-                <p class="text-gray-600 text-sm">© 2026 Developed with passion for the community.</p>
-            </div>
-            <div class="flex gap-10 text-gray-400">
-                <a href="#" class="hover:text-purple-500 transition">Discord</a>
-                <a href="#" class="hover:text-purple-500 transition">Telegram</a>
-                <a href="#" class="hover:text-purple-500 transition">Terms</a>
-            </div>
-        </div>
-    </footer>
+    </div>
 
     <script>
-        // Инициализация кастомного курсора
-        const cursor = document.getElementById('cursor');
-        document.addEventListener('mousemove', e => {
-            cursor.style.left = e.clientX + 'px';
-            cursor.style.top = e.clientY + 'px';
-        });
+        const DB_LOGS = "Wind_Dev_Logs";
 
-        // Эффект появления при скролле (GSAP)
-        gsap.from(".feature-card", {
-            scrollTrigger: ".feature-card",
-            y: 100,
-            opacity: 0,
-            duration: 1,
-            stagger: 0.2,
-            ease: "power4.out"
-        });
-
-        // Простая 3D анимация фона на Three.js
-        const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('bg-canvas'), alpha: true });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-
-        const geometry = new THREE.BufferGeometry();
-        const vertices = [];
-        for (let i = 0; i < 5000; i++) {
-            vertices.push(THREE.MathUtils.randFloatSpread(2000), THREE.MathUtils.randFloatSpread(2000), THREE.MathUtils.randFloatSpread(2000));
-        }
-        geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
-        const particles = new THREE.Points(geometry, new THREE.PointsMaterial({ color: 0x8b5cf6, size: 2 }));
-        scene.add(particles);
-
-        camera.position.z = 1000;
-
-        function animate() {
-            requestAnimationFrame(animate);
-            particles.rotation.y += 0.001;
-            particles.rotation.x += 0.0005;
-            renderer.render(scene, camera);
-        }
-        animate();
-
-        // Скрытие навбара при скролле
-        let lastScroll = 0;
-        window.addEventListener("scroll", () => {
-            const currentScroll = window.pageYOffset;
-            if (currentScroll > lastScroll && currentScroll > 100) {
-                document.getElementById('navbar').classList.add('hidden-nav');
+        // Простая авторизация "Только для Developer"
+        function checkAuth() {
+            const nick = document.getElementById('auth-nick').value.trim().toLowerCase();
+            if (nick === 'developer') {
+                gsap.to("#login-screen", { opacity: 0, scale: 1.1, duration: 0.8, onComplete: () => {
+                    document.getElementById('login-screen').remove();
+                    document.getElementById('main-ui').classList.remove('opacity-0', 'pointer-events-none');
+                    logToConsole("Welcome back, Master Developer.");
+                }});
             } else {
-                document.getElementById('navbar').classList.remove('hidden-nav');
+                alert("ACCESS DENIED: Insufficient permissions.");
             }
-            lastScroll = currentScroll;
-        });
+        }
+
+        function logToConsole(msg) {
+            const con = document.getElementById('console');
+            const p = document.createElement('p');
+            p.innerHTML = `<span class="text-gray-600">[${new Date().toLocaleTimeString()}]</span> ${msg}`;
+            con.appendChild(p);
+            con.scrollTop = con.scrollHeight;
+        }
+
+        // Выдача прав (Левое верхнее меню)
+        function setRole(role) {
+            const user = document.getElementById('target-user').value;
+            if (!user) return alert("Введите имя цели!");
+            logToConsole(`User <b class="text-white">${user}</b> elevated to <b class="text-purple-400">${role}</b>`);
+            alert(`Успешно! Пользователю ${user} выданы права ${role}`);
+        }
+
+        // Генерация ключей
+        function generateKey() {
+            const type = document.getElementById('key-type').value;
+            const key = "WIND-" + Math.random().toString(36).substring(2, 10).toUpperCase() + "-" + Math.random().toString(36).substring(2, 10).toUpperCase();
+            
+            logToConsole(`Key Generated: <span class="text-white">${key}</span>`);
+            logToConsole(`Plan: <span class="text-yellow-500">${type}</span>`);
+            
+            // Копирование в буфер
+            navigator.clipboard.writeText(key);
+            alert(`Ключ на ${type} сгенерирован и скопирован:\n${key}`);
+        }
     </script>
 </body>
 </html>
